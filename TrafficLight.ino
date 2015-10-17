@@ -1,93 +1,91 @@
-#define RED 0
-#define YELLOW 1
-#define GREEN 2
+#define STATE_RED 0
+#define STATE_RED_YELLOW 1
+#define STATE_GREEN 2
+#define STATE_GREEN_BLINK 3
+#define STATE_YELLOW 4
+#define STATE_YELLOW_BLINK 5
 
 #define RED_PIN 2
 #define YELLOW_PIN 7
 #define GREEN_PIN 11
-#define BUTTON_PIN 4
 
-int current = GREEN;
-int lights[3];
-unsigned long waitTimes[3];
-unsigned long lastSwitchTime = 0;
-unsigned long lastPress = 0;
-bool fromGreen = false;
+#define YELLOW_PHASE 1500
+
+int gState = STATE_RED;
 
 void setup() 
 {
   pinMode(RED_PIN, OUTPUT);
   pinMode(YELLOW_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT);
-  lights[RED] = RED_PIN;
-  lights[YELLOW] = YELLOW_PIN;
-  lights[GREEN] = GREEN_PIN;
-  waitTimes[RED] = 3000;
-  waitTimes[YELLOW] = 1500;
-  waitTimes[GREEN] = 4000;
-  digitalWrite(RED, LOW);
-  digitalWrite(YELLOW, LOW);
-  digitalWrite(GREEN, LOW);
 }
 
-void change()
+void wait(int millis)
 {
-  switch(current)
+  delay(millis);
+}
+
+void loop()
+{
+  switch(gState)
   {
-    case RED:
-      current = YELLOW;
-      fromGreen = false;
-      break;
-      
-    case YELLOW:
+    case STATE_RED:
+      digitalWrite(RED_PIN, HIGH);
+      digitalWrite(YELLOW_PIN, LOW);
+      digitalWrite(GREEN_PIN, LOW);
+      wait(6000);
+      gState = STATE_RED_YELLOW;
+      break;      
+
+    case STATE_RED_YELLOW:
+      digitalWrite(RED_PIN, HIGH);
+      digitalWrite(YELLOW_PIN, HIGH);
+      digitalWrite(GREEN_PIN, LOW);
+      wait(YELLOW_PHASE);
+      gState = STATE_GREEN;
+      break;      
+
+    case STATE_GREEN:
       digitalWrite(RED_PIN, LOW);
       digitalWrite(YELLOW_PIN, LOW);
-      if (fromGreen)
-      {
-        current = RED;
-      }
-      else
-      {
-        current = GREEN;
-      }
-      break;
+      digitalWrite(GREEN_PIN, HIGH);
+      wait(7500);
+      gState = STATE_GREEN_BLINK;
+      break;      
       
-    case GREEN:
-      // flash
+    case STATE_GREEN_BLINK:
+      digitalWrite(RED_PIN, LOW);
+      digitalWrite(YELLOW_PIN, LOW);
       for (int i = 0; i < 3; i++)
       {
         digitalWrite(GREEN_PIN, LOW);
-        delay(400);
+        wait(400);
         digitalWrite(GREEN_PIN, HIGH);
-        delay(400);
+        wait(400);
       }
+      gState = STATE_YELLOW;
+      break;      
+
+    case STATE_YELLOW:
+      digitalWrite(RED_PIN, LOW);
+      digitalWrite(YELLOW_PIN, HIGH);
       digitalWrite(GREEN_PIN, LOW);
-      current = YELLOW;
-      fromGreen = true;
-      break;
-  }
-}
-
-bool buttonPress()
-{
-  if (digitalRead(BUTTON_PIN) == LOW && millis() - lastPress > 300)
-  {
-    lastPress = millis();
-    return true;
-  }
-  return false;
-}
-
-void loop() 
-{ 
-  digitalWrite(lights[current], HIGH);
-    
-  if ((millis() - lastSwitchTime >= waitTimes[current]) || buttonPress())
-  { 
-    change();
-    lastSwitchTime = millis();
-    //delay(300);
+      wait(YELLOW_PHASE);
+      gState = (random(0, 10) == 5) ? STATE_YELLOW_BLINK : STATE_RED;
+      break;      
+      
+    case STATE_YELLOW_BLINK:
+      digitalWrite(RED_PIN, LOW);
+      digitalWrite(GREEN_PIN, LOW);
+      for (int i = 0; i < 40; i++)
+      {
+        digitalWrite(YELLOW_PIN, LOW);
+        wait(300);
+        digitalWrite(YELLOW_PIN, HIGH);
+        wait(300);
+      }
+      gState = STATE_RED;
+      break;      
   }
 }
 

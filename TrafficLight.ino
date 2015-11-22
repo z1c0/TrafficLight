@@ -56,7 +56,7 @@ void loop()
     case STATE_GREEN_BLINK:
       digitalWrite(RED_PIN, LOW);
       digitalWrite(YELLOW_PIN, LOW);
-      for (int i = 0; i < 3; i++)
+      for (int i = 0; i < 4; i++)
       {
         digitalWrite(GREEN_PIN, LOW);
         wait(400);
